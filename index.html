@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VA2MXO — Amateur Radio</title>
+  <meta name="description" content="VA2MXO amateur radio station — Quebec, Canada">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Crimson+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+    :root {
+      --bg: #060b14;
+      --amber: #e89d2d;
+      --amber-dim: #a06a15;
+      --amber-glow: #f4b94280;
+      --green: #33d17a;
+      --text: #c8cdd6;
+      --text-dim: #6b7280;
+      --surface: #0d1420;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Crimson Pro', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 40%, #e89d2d08 0%, transparent 70%),
+        radial-gradient(ellipse 50% 80% at 20% 80%, #1a2744 0%, transparent 60%),
+        radial-gradient(ellipse 50% 80% at 80% 20%, #1a1a30 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    canvas#noise {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.035;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+      padding: 2rem;
+      max-width: 700px;
+      width: 100%;
+    }
+
+    /* On-air indicator */
+    .on-air {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--green);
+      opacity: 0;
+      animation: fadeIn 1s 0.3s ease forwards;
+    }
+
+    .on-air .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green), 0 0 12px var(--green);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    /* Callsign hero */
+    .callsign-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 0;
+      overflow: visible;
+    }
+
+    .wave-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      pointer-events: none;
+    }
+
+    .wave {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      border: 1px solid var(--amber-glow);
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(0.5);
+      animation: ripple 5s ease-out infinite;
+    }
+    .wave:nth-child(1) { width: 200px; height: 200px; animation-delay: 0s; }
+    .wave:nth-child(2) { width: 320px; height: 320px; animation-delay: 1.2s; }
+    .wave:nth-child(3) { width: 440px; height: 440px; animation-delay: 2.4s; }
+    .wave:nth-child(4) { width: 560px; height: 560px; animation-delay: 3.6s; }
+
+    .callsign {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(3rem, 12vw, 7rem);
+      color: var(--amber);
+      text-shadow:
+        0 0 20px var(--amber-glow),
+        0 0 60px #e89d2d15;
+      letter-spacing: 0.08em;
+      position: relative;
+      opacity: 0;
+      animation: glowIn 1.2s 0.6s ease forwards;
+    }
+
+    /* Separator */
+    .sep {
+      width: 60px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--amber-dim), transparent);
+      opacity: 0;
+      animation: fadeIn 1s 1s ease forwards;
+    }
+
+    /* Info block */
+    .info {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      opacity: 0;
+      animation: fadeIn 1s 1.2s ease forwards;
+    }
+
+    .info .location {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.8rem;
+      letter-spacing: 0.25em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .info .tagline {
+      font-size: 1.25rem;
+      font-weight: 300;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .info .note {
+      font-size: 0.95rem;
+      color: var(--text-dim);
+      font-weight: 300;
+      font-style: italic;
+    }
+
+    /* Morse decoration */
+    .morse {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1rem;
+      line-height: 1;
+      min-height: 1em;
+      letter-spacing: 0.4em;
+      color: var(--amber-dim);
+      opacity: 0;
+      animation: fadeIn 1s 1.6s ease forwards;
+      user-select: none;
+    }
+
+    /* Band badges */
+    .bands {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      opacity: 0;
+      animation: fadeIn 1s 1.8s ease forwards;
+    }
+
+    .band {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      padding: 0.3rem 0.7rem;
+      border: 1px solid #ffffff0d;
+      border-radius: 2px;
+      color: var(--text-dim);
+      background: var(--surface);
+      transition: border-color 0.3s, color 0.3s;
+    }
+
+    .band:hover {
+      border-color: var(--amber-dim);
+      color: var(--amber);
+    }
+
+    /* Language toggle */
+    .lang-toggle {
+      position: fixed;
+      top: 1.25rem;
+      right: 1.5rem;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      opacity: 0;
+      animation: fadeIn 1s 2s ease forwards;
+    }
+
+    .lang-toggle button {
+      background: none;
+      border: 1px solid #ffffff0d;
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: inherit;
+      letter-spacing: inherit;
+      padding: 0.35rem 0.6rem;
+      cursor: pointer;
+      transition: color 0.3s, border-color 0.3s, background 0.3s;
+    }
+
+    .lang-toggle button:first-child {
+      border-radius: 2px 0 0 2px;
+      border-right: none;
+    }
+
+    .lang-toggle button:last-child {
+      border-radius: 0 2px 2px 0;
+    }
+
+    .lang-toggle button.active {
+      color: var(--amber);
+      border-color: var(--amber-dim);
+      background: #e89d2d0a;
+    }
+
+    .lang-toggle button:hover:not(.active) {
+      color: var(--text);
+      border-color: #ffffff20;
+    }
+
+    /* Footer */
+    footer {
+      position: relative;
+      z-index: 2;
+      margin-top: 4rem;
+      padding: 2rem;
+      text-align: center;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--text-dim);
+      opacity: 0;
+      animation: fadeIn 1s 2s ease forwards;
+    }
+
+    footer a {
+      color: var(--amber-dim);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    footer a:hover { color: var(--amber); }
+
+    /* Keyframes */
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    @keyframes glowIn {
+      0% { opacity: 0; filter: blur(8px); transform: scale(0.95); }
+      100% { opacity: 1; filter: blur(0); transform: scale(1); }
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    @keyframes ripple {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.5; }
+      100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .container { padding: 1.5rem 1rem; }
+      .bands { gap: 0.35rem; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="noise"></canvas>
+
+  <div class="lang-toggle">
+    <button class="active" data-lang="en">EN</button>
+    <button data-lang="fr">FR</button>
+  </div>
+
+  <div class="container">
+    <div class="on-air">
+      <span class="dot"></span>
+      <span data-i18n="onair">On Air</span>
+    </div>
+
+    <div class="callsign-wrap">
+      <div class="wave-container">
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+      </div>
+      <h1 class="callsign">VA2MXO</h1>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="info">
+      <p class="location">Qu&eacute;bec &middot; Canada</p>
+      <p class="tagline" data-i18n="tagline">Newly licensed. Building the shack.<br>More to come on this frequency.</p>
+      <p class="note">73 de VA2MXO</p>
+    </div>
+
+    <div class="morse" aria-hidden="true">
+      <span class="morse-output"></span>
+    </div>
+
+    <div class="bands">
+      <span class="band">HF</span>
+      <span class="band">VHF</span>
+      <span class="band">UHF</span>
+    </div>
+  </div>
+
+  <footer>
+    <p>QRZ: <a href="https://www.qrz.com/db/VA2MXO" target="_blank" rel="noopener">VA2MXO</a></p>
+  </footer>
+
+  <script>
+    // Grain / noise texture
+    (() => {
+      const c = document.getElementById('noise');
+      const ctx = c.getContext('2d');
+      let w, h;
+      function resize() {
+        w = c.width = window.innerWidth;
+        h = c.height = window.innerHeight;
+      }
+      function draw() {
+        const img = ctx.createImageData(w, h);
+        const d = img.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const v = Math.random() * 255;
+          d[i] = d[i+1] = d[i+2] = v;
+          d[i+3] = 255;
+        }
+        ctx.putImageData(img, 0, 0);
+      }
+      resize();
+      draw();
+      window.addEventListener('resize', () => { resize(); draw(); });
+    })();
+
+    // Morse code animation for "VA2MXO"
+    (() => {
+      const morse = {
+        'V': '...-', 'A': '.-', '2': '..---',
+        'M': '--', 'X': '-..-', 'O': '---'
+      };
+      const call = 'VA2MXO';
+      const encoded = call.split('').map(ch => morse[ch]).join('  ');
+      const visual = encoded
+        .replace(/\./g, '\u00B7')
+        .replace(/-/g, '\u2014');
+      const el = document.querySelector('.morse-output');
+      let i = 0;
+
+      function type() {
+        if (i <= visual.length) {
+          el.textContent = visual.slice(0, i);
+          i++;
+          setTimeout(type, 120);
+        } else {
+          setTimeout(() => { i = 0; el.textContent = ''; setTimeout(type, 800); }, 4000);
+        }
+      }
+
+      setTimeout(type, 2200);
+    })();
+
+    // Language toggle
+    (() => {
+      const strings = {
+        en: {
+          onair: 'On Air',
+          tagline: 'Newly licensed. Building the shack.<br>More to come on this frequency.',
+        },
+        fr: {
+          onair: 'En ondes',
+          tagline: 'Nouvellement licencié. Le shack prend forme.<br>Plus à venir sur cette fréquence.',
+        }
+      };
+
+      const buttons = document.querySelectorAll('.lang-toggle button');
+      let current = localStorage.getItem('va2mxo-lang') || 'en';
+
+      function apply(lang) {
+        current = lang;
+        localStorage.setItem('va2mxo-lang', lang);
+        document.documentElement.lang = lang;
+        buttons.forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+          el.innerHTML = strings[lang][el.dataset.i18n];
+        });
+      }
+
+      buttons.forEach(b => b.addEventListener('click', () => apply(b.dataset.lang)));
+      apply(current);
+    })();
+  </script>
+</body>
+</html>
