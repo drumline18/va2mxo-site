@@ -699,24 +699,52 @@
         'M': '--', 'X': '-..-', 'O': '---'
       };
       const call = 'VA2MXO';
-      const encoded = call.split('').map(ch => morse[ch]).join('  ');
-      const visual = encoded
-        .replace(/\./g, '\u00B7')
-        .replace(/-/g, '\u2014');
       const el = document.querySelector('.morse-output');
-      let i = 0;
+      const UNIT_MS = 120;
+      const DOT = UNIT_MS;
+      const DASH = UNIT_MS * 3;
+      const GAP_SYMBOL = UNIT_MS;
+      const GAP_LETTER = UNIT_MS * 3;
+      const LOOP_PAUSE = UNIT_MS * 10;
+      const START_DELAY = 2200;
+      const RESTART_DELAY = 1200;
 
-      function type() {
-        if (i <= visual.length) {
-          el.textContent = visual.slice(0, i);
-          i++;
-          setTimeout(type, 120);
-        } else {
-          setTimeout(() => { i = 0; el.textContent = ''; setTimeout(type, 800); }, 4000);
-        }
+      function play() {
+        el.textContent = '';
+        let delay = 0;
+
+        call.split('').forEach((letter, letterIndex, letters) => {
+          const pattern = morse[letter];
+          if (!pattern) return;
+
+          pattern.split('').forEach((symbol, symbolIndex) => {
+            const visual = symbol === '.' ? '\u00B7' : '\u2014';
+            setTimeout(() => {
+              el.textContent += visual;
+            }, delay);
+            delay += symbol === '.' ? DOT : DASH;
+
+            if (symbolIndex < pattern.length - 1) {
+              delay += GAP_SYMBOL;
+            }
+          });
+
+          if (letterIndex < letters.length - 1) {
+            setTimeout(() => {
+              el.textContent += '  ';
+            }, delay);
+            delay += GAP_LETTER;
+          }
+        });
+
+        setTimeout(() => {
+          el.textContent = '';
+        }, delay + LOOP_PAUSE);
+
+        setTimeout(play, delay + LOOP_PAUSE + RESTART_DELAY);
       }
 
-      setTimeout(type, 2200);
+      setTimeout(play, START_DELAY);
     })();
 
     // Language toggle
