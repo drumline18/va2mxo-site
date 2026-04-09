@@ -361,6 +361,46 @@
       animation: fadeIn 1s 2s ease forwards;
     }
 
+    .footer-sep {
+      width: min(520px, 88vw);
+      margin: 0 auto 1.1rem;
+      border: 0;
+      border-top: 1px solid #e89d2d3b;
+    }
+
+    .footer-links {
+      margin-bottom: 1.35rem;
+    }
+
+    .footer-links p {
+      margin: 0.45rem 0;
+    }
+
+    .hamdata-card {
+      width: min(520px, 88vw);
+      margin: 0 auto;
+      padding: 1rem 1.1rem 1.05rem;
+      border: 1px solid #e89d2d38;
+      background: #0f1a2a80;
+      box-shadow: inset 0 0 0 1px #ffffff06;
+    }
+
+    .hamdata-title {
+      margin: 0 0 0.45rem;
+      color: var(--amber);
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      font-size: 0.67rem;
+    }
+
+    .hamdata-desc {
+      margin: 0 0 0.7rem;
+      letter-spacing: 0.11em;
+      line-height: 1.55;
+      color: var(--text-dim);
+      font-size: 0.58rem;
+    }
+
     footer a {
       color: var(--amber-dim);
       text-decoration: none;
@@ -456,7 +496,15 @@
   </div>
 
   <footer>
-    <p>QRZ: <a href="https://www.qrz.com/db/VA2MXO" target="_blank" rel="noopener">VA2MXO</a></p>
+    <hr class="footer-sep">
+    <div class="footer-links">
+      <p>QRZ: <a href="https://www.qrz.com/db/VA2MXO" target="_blank" rel="noopener">VA2MXO</a></p>
+    </div>
+    <div class="hamdata-card">
+      <p class="hamdata-title" data-i18n="hamdataTitle">Canadian Ham Stats</p>
+      <p class="hamdata-desc" data-i18n="hamdataDesc">Statistics on Canadian amateur radio operators sourced from ISED and analyzed over time.</p>
+      <a href="https://hamdata.va2mxo.com" target="_blank" rel="noopener">hamdata.va2mxo.com</a>
+    </div>
   </footer>
 
   <script>
@@ -753,10 +801,14 @@
         en: {
           onair: 'On Air',
           tagline: 'Newly licensed. Building the shack.<br>More to come on this frequency.',
+          hamdataTitle: 'Canadian Ham Stats',
+          hamdataDesc: 'Statistics on Canadian amateur radio operators sourced from ISED and analyzed over time.',
         },
         fr: {
           onair: 'En ondes',
           tagline: 'Tout juste certifié. Le shack prend forme.<br>Plus à venir sur cette fréquence.',
+          hamdataTitle: 'Statistiques radioamateurs canadiens',
+          hamdataDesc: 'Statistiques sur les radioamateurs canadiens provenant d\'ISED et analysees dans le temps.',
         }
       };
 
